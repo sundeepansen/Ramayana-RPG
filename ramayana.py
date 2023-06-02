@@ -1,6 +1,8 @@
 import random
 import time
 import openai
+import sounddevice as sd
+import soundfile as sf
 
 # Set your OpenAI API key here
 API_KEY = "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"
@@ -31,10 +33,10 @@ class Enemy(Character):
     def __init__(self, name, health, attack, defense):
         super().__init__(name, health, attack, defense)
 
-# Function to generate content using ChatGPT
+# Function to generate content using ChatGPT 3.5 Turbo
 def generate_content(prompt: str) -> str:
     response = openai.Completion.create(
-        engine="text-davinci-003",
+        model="text-davinci-003",
         prompt=prompt,
         max_tokens=100,
         temperature=0.7,
@@ -42,6 +44,28 @@ def generate_content(prompt: str) -> str:
         stop=None,
     )
     return response.choices[0].text.strip()
+
+# Function to perform speech-to-text conversion
+def convert_speech_to_text() -> str:
+    # Record speech input
+    fs = 44100
+    seconds = 3
+    recording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
+    sd.wait()
+
+    # Save the recorded audio as a WAV file
+    file_path = "speech_input.wav"
+    sf.write(file_path, recording, fs)
+
+    # Perform speech-to-text conversion
+    response = openai.SpeechToText.create(
+        audio=open(file_path, "rb"),
+        model="whisper",
+        language="en-US",
+    )
+
+    # Retrieve and return the transcribed text
+    return response.transcriptions[0].text.strip() if response.transcriptions else ""
 
 # Function to simulate a battle between player and enemy
 def battle(player: Player, enemy: Enemy) -> bool:
@@ -73,25 +97,29 @@ def battle(player: Player, enemy: Enemy) -> bool:
 
 # Game loop
 def game_loop(player: Player) -> None:
-    print("Welcome to the Text-Based RPG!")
+    print("Welcome to the Ramayana RPG!")
     print("-------------------------------")
     time.sleep(1)
     while True:
-        # Generate content using ChatGPT
-        prompt = "You find yourself in a new area. What do you do?"
-        print("You find yourself in a new area. What do you do?")
+        # Generate a random enemy
+        enemy_name = random.choice(["Ravana", "Kumbhakarna", "Indrajit"])
+        enemy_health = random.randint(50, 100)
+        enemy_attack = random.randint(8, 12)
+        enemy_defense = random.randint(3, 6)
+        enemy = Enemy(enemy_name, enemy_health, enemy_attack, enemy_defense)
+
+        # Generate content using ChatGPT 3.5 Turbo for player dialogues
+        prompt = f"{player.name} enters a new area. What do you do?"
         content = generate_content(prompt)
         print(content)
         time.sleep(1)
 
-        # Simulate battle or other events
-        if random.random() < 0.5:
-            enemy = Enemy("Enemy", random.randint(50, 100), random.randint(8, 12), random.randint(3, 6))
-            if not battle(player, enemy):
-                break
-        else:
-            # Add other events or encounters here
-            pass
+        # Convert speech input to text
+        print("Please speak your command:")
+        speech_input = convert_speech_to_text()
+        print(f"You said: {speech_input}")
+
+        # Process the player's command and continue the game
 
 # Entry point
 def main() -> None:
