@@ -1,6 +1,13 @@
 import random
 import time
 import matplotlib.pyplot as plt
+import openai
+
+# Set your OpenAI API key here
+API_KEY = "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"
+
+# Configure OpenAI API
+openai.api_key = API_KEY
 
 # Character class
 class Character:
@@ -74,6 +81,18 @@ def plot_battle(player_health_history, enemy_health_history):
     plt.legend()
     plt.show()
 
+# Function to generate a response from ChatGPT
+def generate_response(prompt):
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=50,
+        temperature=0.7,
+        n=1,
+        stop=None
+    )
+    return response.choices[0].text.strip()
+
 # Game loop
 def game_loop(player: Player) -> None:
     print("Welcome to the Ramayana RPG!")
@@ -91,6 +110,27 @@ def game_loop(player: Player) -> None:
 
         # Reset player's health for the next battle
         player.health = 100
+
+        print("-------------------------------")
+        time.sleep(1)
+
+        # Prompt player for their next action using ChatGPT
+        prompt = f"You defeated {enemy.name}. What do you do next?"
+        response = generate_response(prompt)
+
+        # Process ChatGPT response and determine player's action
+        if "1. Explore further" in response:
+            print("You decide to explore further.")
+            # Continue the game loop
+        elif "2. Return to town" in response:
+            print("You choose to return to town.")
+            # Implement logic to return to town
+        elif "3. Rest and heal" in response:
+            print("You decide to rest and heal.")
+            # Implement logic to rest and heal
+        else:
+            print("I'm sorry, I didn't understand your action. Please try again.")
+            # Continue the game loop
 
         print("-------------------------------")
         time.sleep(1)
