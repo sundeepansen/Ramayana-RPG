@@ -1,10 +1,11 @@
+import os
 import random
 import time
 import matplotlib.pyplot as plt
 import openai
 
-# Set your OpenAI API key here
-API_KEY = "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"
+# Retrieve the API key from an environment variable
+API_KEY = os.environ.get("OPENAI_API_KEY")
 
 # Configure OpenAI API
 openai.api_key = API_KEY
@@ -86,7 +87,7 @@ def generate_response(prompt):
     response = openai.Completion.create(
         engine="text-davinci-003",
         prompt=prompt,
-        max_tokens=50,
+        max_tokens=100,
         temperature=0.7,
         n=1,
         stop=None
@@ -115,22 +116,32 @@ def game_loop(player: Player) -> None:
         time.sleep(1)
 
         # Prompt player for their next action using ChatGPT
-        prompt = f"You defeated {enemy.name}. What do you do next?"
+        prompt = f"You defeated {enemy.name}. What do you want to do next?"
         response = generate_response(prompt)
 
-        # Process ChatGPT response and determine player's action
-        if "1. Explore further" in response:
-            print("You decide to explore further.")
-            # Continue the game loop
-        elif "2. Return to town" in response:
-            print("You choose to return to town.")
-            # Implement logic to return to town
-        elif "3. Rest and heal" in response:
-            print("You decide to rest and heal.")
-            # Implement logic to rest and heal
-        else:
-            print("I'm sorry, I didn't understand your action. Please try again.")
-            # Continue the game loop
+        # Process ChatGPT response and determine player's action and consequence
+        choices = response.split("\n")
+        valid_choices = []
+        consequences = []
+        for choice in choices:
+            if choice.startswith("*"):
+                valid_choices.append(choice[1:])
+            elif choice.startswith("-"):
+                consequences.append(choice[1:])
+
+        if valid_choices:
+            print("Choose an option:")
+            for i, choice in enumerate(valid_choices):
+                print(f"{i+1}. {choice}")
+
+            player_choice = input("Enter your choice: ")
+            if player_choice.isdigit() and 1 <= int(player_choice) <= len(valid_choices):
+                chosen_index = int(player_choice) - 1
+                print(f"You chose: {valid_choices[chosen_index]}")
+                print(f"Consequence: {consequences[chosen_index]}")
+                # Implement logic based on the chosen option and consequence
+            else:
+                print("Invalid choice. Please try again.")
 
         print("-------------------------------")
         time.sleep(1)
